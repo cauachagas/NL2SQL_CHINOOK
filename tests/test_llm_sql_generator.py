@@ -1,6 +1,7 @@
 import os
 import textwrap
 import unittest
+from typing import Any
 
 from sqlalchemy import create_engine, text
 
@@ -8,10 +9,14 @@ from src.llm_sql_generator import LlmSqlGenerator, LlmSqlGeneratorConfig
 from src.schema_inspector import get_schema_representation
 
 
-def _fetch_rows(engine, raw_sql: str) -> list[tuple]:
+def _fetch_rows(engine, raw_sql: str) -> list[dict[str, Any]]:
     with engine.connect() as connection:
         result = connection.execute(text(raw_sql))
-        return [tuple(row) for row in result]
+        column_names = [name.lower() for name in result.keys()]
+        rows: list[dict[str, Any]] = []
+        for raw_row in result:
+            rows.append({col: value for col, value in zip(column_names, raw_row, strict=True)})
+        return rows
 
 
 @unittest.skipUnless(os.getenv("OPENAI_API_KEY"), "OPENAI_API_KEY não configurada")
@@ -46,7 +51,7 @@ class TestLlmSqlGeneratorIntegration(unittest.TestCase):
                 c.FirstName,
                 c.LastName,
                 SUM(i.Total) AS TotalSpent,
-                COUNT(i.InvoiceId) AS NumberOfTransactions
+                COUNT(i.InvoiceId) AS TransactionCount
             FROM customers c
             JOIN invoices i ON c.CustomerId = i.CustomerId
             GROUP BY c.CustomerId, c.FirstName, c.LastName
@@ -60,9 +65,10 @@ class TestLlmSqlGeneratorIntegration(unittest.TestCase):
             "incluindo o número de transações."
         )
 
-        generated_sql = self.generator.generate_sql(question, self.schema)
+        result = self.generator.generate_sql(question, self.schema)
+        self.assertTrue(result.plan.strip())
         self.assertListEqual(
-            _fetch_rows(self.engine, generated_sql),
+            _fetch_rows(self.engine, result.sql),
             _fetch_rows(self.engine, reference_sql),
         )
 
@@ -71,7 +77,7 @@ class TestLlmSqlGeneratorIntegration(unittest.TestCase):
             """
             SELECT
                 BillingCountry AS Country,
-                COUNT(InvoiceId) AS NumberOfSales,
+                COUNT(InvoiceId) AS SalesCount,
                 SUM(Total) AS TotalRevenue
             FROM invoices
             GROUP BY BillingCountry
@@ -80,13 +86,12 @@ class TestLlmSqlGeneratorIntegration(unittest.TestCase):
             """
         ).strip()
 
-        question = (
-            "Determine os 10 países com a maior receita total, incluindo o número de vendas."
-        )
+        question = "Determine os 10 países com a maior receita total, incluindo o número de vendas."
 
-        generated_sql = self.generator.generate_sql(question, self.schema)
+        result = self.generator.generate_sql(question, self.schema)
+        self.assertTrue(result.plan.strip())
         self.assertListEqual(
-            _fetch_rows(self.engine, generated_sql),
+            _fetch_rows(self.engine, result.sql),
             _fetch_rows(self.engine, reference_sql),
         )
 

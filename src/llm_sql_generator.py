@@ -53,7 +53,9 @@ class LlmSqlGeneratorConfig:
             timeout=20.0,
         )
         generator = LlmSqlGenerator(config)
-        sql = generator.generate_sql("Qual cidade mais compra meus produtos?", schema)
+        result = generator.generate_sql("Qual cidade mais compra meus produtos?", schema)
+        print(result.plan)
+        print(result.sql)
     """
 
     model: str = "gpt-4.1-mini"
@@ -140,7 +142,13 @@ class LlmSqlGenerator:
             "- Use only tables and columns from the schema below.\n"
             "- If the schema is insufficient to answer, respond with exactly: "
             "INSUFFICIENT_SCHEMA.\n"
-            "- Return only the SQL query, without commentary or explanation.\n"
+            "- Always express identifiers and aliases in English, even if the "
+            "question is in another language.\n"
+            "- Favor consistent naming for aggregates: COUNT(InvoiceId) -> "
+            "InvoiceCount; SUM(Invoice.Total) -> InvoiceTotal.\n"
+            "- Return BOTH: (a) a numbered plan explaining step-by-step how to "
+            "build the query, and (b) the final SQL.\n"
+            "- Output must strictly follow the provided JSON schema (plan + sql).\n"
             "</Rules>\n\n"
             "<Schema>\n"
             f"{schema}\n"
@@ -212,8 +220,9 @@ class LlmSqlGenerator:
             return SqlGenerationResponse.model_validate_json(raw_response)
         except PydanticValidationError as exc:  # pragma: no cover - proteção extra
             self._logger.error(
-                "Resposta do modelo fora do formato esperado:
- %s", raw_response, exc_info=True
+                "Resposta do modelo fora do formato esperado: %s",
+                raw_response,
+                exc_info=True,
             )
             raise SqlGenerationError("Resposta do modelo fora do formato esperado.") from exc
 
@@ -277,7 +286,7 @@ class LlmSqlGenerator:
             raise SqlValidationError("A SQL gerada é inválida para o banco de dados.") from exc
 
 
-def generate_sql(question: str, schema: str) -> str:
+def generate_sql(question: str, schema: str) -> SqlGenerationResult:
     """Função de conveniência para geração de SQL usando configuração padrão."""
     generator = LlmSqlGenerator()
     return generator.generate_sql(question, schema)

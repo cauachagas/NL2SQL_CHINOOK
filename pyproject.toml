@@ -8,6 +8,7 @@ dependencies = [
     "openai>=2.24.0",
     "python-dotenv>=1.2.2",
     "sqlalchemy>=2.0.47",
+    "pydantic>=2.7.0",
 ]
 
 [dependency-groups]

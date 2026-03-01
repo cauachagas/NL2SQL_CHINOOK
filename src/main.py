@@ -21,9 +21,10 @@ def main():
         "incluindo o número de transações."
     )
     # question = "Determine os 10 países com a maior receita total, incluindo o número de vendas."
-    sql = generator.generate_sql(question, schema)
+    result = generator.generate_sql(question, schema)
 
-    print(sql)
+    print("Plano gerado:\n" + result.plan)
+    print("\nSQL sugerida:\n" + result.sql)
 
 
 if __name__ == "__main__":
