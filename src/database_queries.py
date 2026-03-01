@@ -1,6 +1,6 @@
-from sqlalchemy import create_engine, func, desc
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, desc, func
 from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.orm import sessionmaker
 
 # Database connection
 engine = create_engine("sqlite:///chinook.db")

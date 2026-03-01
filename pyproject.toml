@@ -5,6 +5,8 @@ description = "A project to convert natural language to SQL queries"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "openai>=2.24.0",
+    "python-dotenv>=1.2.2",
     "sqlalchemy>=2.0.47",
 ]
 
@@ -12,3 +14,31 @@ dependencies = [
 dev = [
     "ruff>=0.15.4",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "UP",  # pyupgrade suggestions
+    "B",   # bugbear
+    "I",   # import sorting
+    "SIM", # simplify
+    "N",   # pep8-naming
+    "PL",  # pylint-inspired rules
+    "S",   # security rules (Bandit)
+]
+ignore = [
+    "E203", # compatibilidade com black-style slicing
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
+
+[tool.ruff.format]
+docstring-code-format = true
+indent-style = "space"
+quote-style = "double"

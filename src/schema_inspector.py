@@ -1,5 +1,7 @@
+from sqlalchemy import create_engine, inspect
+
+
 def get_schema_representation(db_path="chinook.db"):
-    from sqlalchemy import create_engine, inspect
 
     engine = create_engine(f"sqlite:///{db_path}")
     inspector = inspect(engine)
